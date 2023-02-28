@@ -1,37 +1,49 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
-	//"gorm.io/driver/mysql"
-	//"gorm.io/gorm"
 )
 
 // App has router and db instances
 type App struct {
 	Router *mux.Router
-	//DB     *gorm.DB
+	DB     *sql.DB
 }
 
-// Initialize initializes the app with predefined configuration
+// App.init() initializes the app's configuration and database'
 func (a *App) init(config *config) {
-	/* 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True",
-	   		config.DB.Username,
-	   		config.DB.Password,
-	   		config.DB.Host,
-	   		config.DB.Port,
-	   		config.DB.Name,
-	   		config.DB.Charset)
+	// TODO: Remove below debug message
+	log.Println("Getting configuration")
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True",
+		config.DB.username,
+		config.DB.password,
+		config.DB.host,
+		config.DB.port,
+		config.DB.name,
+		config.DB.charset)
 
-	   	db, err := gorm.Open(config.DB.Dialect, dsn)
-	   	if err != nil {
-	   		log.Fatal("Could not connect database")
-	   	}
+	// Create database "connection" to use for life of app
 
-	   	a.DB = model.DBMigrate(db) */
+	// TODO: Remove below debug messages
+	log.Println("Connection to database")
+	log.Printf("DSN: %s\n", dsn)
+	var err error
+	a.DB, err = sql.Open("mysql", dsn)
+	if err != nil {
+		log.Fatalln("Failed to open DB: ", err)
+	}
+	if err = a.DB.Ping(); err != nil {
+		log.Fatalln("Connecting to DB failed: ", err)
+	}
+	defer a.DB.Close()
+
 	a.Router = mux.NewRouter()
 	a.initRoutes()
 }
@@ -43,6 +55,8 @@ func (a *App) initRoutes() {
 
 // run() starts the API server
 func (a *App) run(addr string) {
+	// TODO: Remove below debug message
+	log.Println("API server starting")
 	log.Fatal(http.ListenAndServe(addr, a.Router))
 }
 
