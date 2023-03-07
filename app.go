@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -10,10 +11,13 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type key int
+
 // App has router and db instances
 type App struct {
-	Router *mux.Router
-	DB     *sql.DB
+	DevRouter           *mux.Router
+	DB                  *sql.DB
+	DevKey, PathVarsKey key
 }
 
 // App.init() initializes the app's configuration and database'
@@ -26,6 +30,10 @@ func (a *App) init(config *config) {
 		config.DB.name,
 		config.DB.charset)
 
+	// Set context id
+	a.DevKey = 1
+	a.PathVarsKey = 2
+
 	// Create database "connection" to use for life of app
 	var err error
 	a.DB, err = sql.Open("mysql", dsn)
@@ -37,18 +45,37 @@ func (a *App) init(config *config) {
 	}
 	//defer a.DB.Close() // This seems to close DB as soon as App.init() is complete.
 
-	a.Router = mux.NewRouter()
+	a.DevRouter = mux.NewRouter().PathPrefix("/v1/device").Subrouter()
 	a.initRoutes()
+}
+
+// authShim() is a middleware substitute for actual authorizer code
+func (a *App) authShim(h http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Enable CORS
+		enableCors(&w)
+
+		// Create context in order to pass back device key and path variables
+		deviceKey := "device1"
+		ctx := context.WithValue(context.TODO(), a.DevKey, deviceKey)
+		ctx = context.WithValue(ctx, a.PathVarsKey, mux.Vars(r))
+		r = r.WithContext(ctx)
+
+		h.ServeHTTP(w, r)
+	})
 }
 
 // initRoutes() creates all the required API routes
 func (a *App) initRoutes() {
-	a.Router.HandleFunc("/v1/device/{orgID}/waitingroom", a.listWait).Methods("GET")
-	a.Router.HandleFunc("/v1/device/waitingroom", a.addWait).Methods("POST")
-	a.Router.HandleFunc("/v1/device/profile", a.getProfile).Methods("GET")
+	// Device endpoints
+	a.DevRouter.Methods("GET").Path("/{orgID}/waiting_room").HandlerFunc(a.authShim(a.listWait))
+	a.DevRouter.Methods("POST").Path("/{orgID}/waiting_room").HandlerFunc(a.authShim(a.addWait))
+	a.DevRouter.Methods("GET").Path("/{orgID}/profile").HandlerFunc(a.authShim(a.getProfile))
+
+	// Webapp endpoints
 }
 
 // run() starts the API server
 func (a *App) run(addr string) {
-	log.Fatal(http.ListenAndServe(addr, a.Router))
+	log.Fatal(http.ListenAndServe(addr, a.DevRouter))
 }

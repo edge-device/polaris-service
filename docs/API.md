@@ -5,13 +5,13 @@
 - [API Documentation](#api-documentation)
     - [1. Join Waiting Room](#1-join-waiting-room)
     - [2. List Devices in Waiting Room](#2-list-devices-in-waiting-room)
-    - [3. Keep this as an example](#3-keep-this-as-an-example)
+    - [3. Check for profile](#3-check-for-profile)
 
 <!-- /TOC -->
 
 ## 1. Join Waiting Room
 
-This endpoint enables devices, which have obtained credentials (symmetric key, device ID, and organization ID) via FDO T02, to join a virtual waiting room.
+This endpoint enables devices, which have obtained credentials (Polaris device key, device ID, and organization ID) via FDO T02, to join a virtual waiting room.
 
 **POST** `/v1/device/{org_id}/waiting_room`
 
@@ -19,8 +19,8 @@ This endpoint enables devices, which have obtained credentials (symmetric key, d
 
 Parameter | Location | Required | Default | Description
 --------- | ------- |------- |------- | -----------
-Authorization | header | yes | n/a | Access Token in Bearer format signed using symmetric key obtained through device onboarding
-org_id | URL | yes | n/a | Organization ID obtained through device onboarding
+Authorization | header | yes | n/a | Bearer token signed using the Polaris device key obtained through FDO T02
+org_id | URL | yes | n/a | Organization ID obtained through FDO T02
 device_id | Authorization header | yes | n/a | Device ID obtained through FDO T02
 
 ### Response Codes
@@ -41,7 +41,7 @@ List all devices in waiting room.
 
 Parameter | Location | Required | Default | Description
 -------- | ------- |------- |------- | -----------
-Authorization | header | yes | n/a | Access Token in Bearer format
+Authorization | header | yes | n/a | Bearer token signed using the Polaris device key obtained through FDO T02
 org_id | URL | yes | n/a | Organization ID
 device_id | body | yes | n/a | Device ID received during FDO T02
 
@@ -67,16 +67,16 @@ Code | Description
 
 ## 3. Check for profile
 
-This endpoint is used by devices that have joined the to check if a Profile has been assigned. If a Profile URL is not available, the device shall periodically check this endpoint until a profile is assigned.
+This endpoint is used by devices, that have joined the waiting room, to check if a Profile has been assigned. The device shall periodically check this endpoint until a profile is assigned.
 
-**POST** `/v1/device/profile`
+**POST** `/v1/device/{org_id}/profile`
 
 ### Query Parameters
 
 Parameter | Location | Required | Default | Description
 --------- | ------- |------- |------- | -----------
-Authorization | header | yes | n/a | Access Token in Bearer format signed using symmetric key obtained through device onboarding
-org_id | URL | yes | n/a | Organization ID obtained through device onboarding
+Authorization | header | yes | n/a | Bearer token signed using the Polaris device key obtained through FDO T02
+org_id | URL | yes | n/a | Organization ID obtained through FDO T02
 device_id | Authorization header | yes | n/a | Device ID obtained through FDO T02
 
 ### Response body
