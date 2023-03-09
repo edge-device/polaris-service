@@ -70,6 +70,7 @@ func (a *App) addWait(w http.ResponseWriter, r *http.Request) {
 		SET joined_at = ?
 		WHERE device_id = ?
 		AND org_id = ?;`
+	log.Println(query) // TODO: remove debug message
 	res, err := a.DB.Exec(query, time.Now().Unix(), devID, orgID)
 	if err != nil {
 		log.Printf("App.addWait(): Error running update query: %v\n", err)

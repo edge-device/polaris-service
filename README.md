@@ -1,8 +1,8 @@
 # polaris-service
 
-Build: make build
+Build: make build or make docker
 
-docker build -t polaris-service .
+
 
 # Running API server from command line
 DBUSER=root DBPASSWD='Intel123!' DBHOST=localhost ./polaris
