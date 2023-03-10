@@ -27,7 +27,8 @@ device_id | Authorization header | yes | n/a | Device ID obtained through FDO T0
 Code | Description
 ---- | -----------
 200 | Success
-401 | Authorization failed
+401 | Missing authorization
+403 | Authorization failed
 404 | Resource not found
 
 
@@ -69,7 +70,7 @@ Code | Description
 
 This endpoint is used by devices, that have joined the waiting room, to check if a Profile has been assigned. The device shall periodically check this endpoint until a profile is assigned.
 
-**POST** `/v1/device/{org_id}/profile`
+**GET** `/v1/device/{org_id}/profile`
 
 ### Query Parameters
 
