@@ -4,10 +4,9 @@ import (
 	//"crypto/rand"
 	//"encoding/base64"
 	"encoding/json"
+
 	//"log"
 	"net/http"
-
-	"github.com/golang-jwt/jwt/v4"
 )
 
 // writeJSONResponse() is helper that returns JSON HTTP response
@@ -16,10 +15,6 @@ func writeJSONResponse(w http.ResponseWriter, resCode int, payload interface{}) 
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(resCode)
 	w.Write(p)
-}
-
-func getKey(token *jwt.Token) (interface{}, error) {
-	return []byte("This is my secret key"), nil
 }
 
 // genRand generates and returns hash of random []byte
