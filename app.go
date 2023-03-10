@@ -59,7 +59,6 @@ func (a *App) authShim(h http.HandlerFunc) http.HandlerFunc {
 
 		// authenticate 'Authorization' token
 		var deviceID string
-		verifyKey := []byte("This is my secret key") // TODO: eventually get this from DB
 
 		// Check for missing Authorization header
 		if r.Header["Authorization"] == nil {
@@ -70,22 +69,15 @@ func (a *App) authShim(h http.HandlerFunc) http.HandlerFunc {
 		tokenStr := r.Header["Authorization"][0]
 
 		// Parse and validate JWT from Authorization header
-		_, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("error parsing JWT")
-			}
-			claims, ok := token.Claims.(jwt.MapClaims)
-			if !ok {
-				err := fmt.Errorf("could not parse JWT claims")
-				return nil, fmt.Errorf("error parsing JWT claims: %w", err)
-			}
-			deviceID = fmt.Sprintf("%v", claims["device_id"]) // TODO: lookup key using this deviceID
-			return verifyKey, nil
-		}, jwt.WithValidMethods([]string{"HS512"}))
+		token, err := jwt.Parse(tokenStr, getKey, jwt.WithValidMethods([]string{"HS512"}))
 		if err != nil {
+			http.Error(w, string("invalid Authorization"), http.StatusForbidden)
 			log.Printf("JWT parse returned error: %v", err)
+			return
 		}
-
+		claims := token.Claims.(jwt.MapClaims)
+		deviceID = fmt.Sprintf("%v", claims["device_id"]) // TODO: lookup key using this deviceID
+		log.Println("DeviceID: ", deviceID)               // TODO: remove this message
 		// Create context in order to pass back device key and path variables
 		ctx := context.WithValue(context.TODO(), a.DevKey, deviceID)
 		ctx = context.WithValue(ctx, a.PathVarsKey, mux.Vars(r))

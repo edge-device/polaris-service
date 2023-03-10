@@ -51,18 +51,15 @@ func (a *App) addWait(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	orgID := pathVars["orgID"]
-	// TODO: remove debug message below
-	log.Printf("App.addWait(): orgID:%s\n", orgID)
 
+	// get deviceID from context
 	devID, ok := r.Context().Value(a.DevKey).(string)
 	if !ok {
 		log.Println("Error asserting devID context to string.")
 		log.Println(r.Context().Value(a.DevKey))
-		http.Error(w, "getting endpoint context", http.StatusInternalServerError)
+		http.Error(w, "error getting endpoint context", http.StatusInternalServerError)
 		return
 	}
-	// TODO: remove debug message below
-	log.Printf("App.addWait(): devID:%s\n", devID)
 
 	// Run update query
 	query := `
@@ -70,7 +67,6 @@ func (a *App) addWait(w http.ResponseWriter, r *http.Request) {
 		SET joined_at = ?
 		WHERE device_id = ?
 		AND org_id = ?;`
-	log.Println(query) // TODO: remove debug message
 	res, err := a.DB.Exec(query, time.Now().Unix(), devID, orgID)
 	if err != nil {
 		log.Printf("App.addWait(): Error running update query: %v\n", err)
