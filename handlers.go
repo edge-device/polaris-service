@@ -159,3 +159,10 @@ func (a *App) getProfile(w http.ResponseWriter, r *http.Request) {
 
 	writeJSONResponse(w, http.StatusOK, profURL) // TODO: need to return profile URL object
 }
+
+// oauthCall
+// App.oauthCall() is a callback for Github Oauth requests
+func (a *App) oauthCall(w http.ResponseWriter, r *http.Request) {
+
+	writeJSONResponse(w, http.StatusOK, nil)
+}

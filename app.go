@@ -136,6 +136,8 @@ func (a *App) initRoutes() {
 	a.DevRouter.Methods("GET").Path("/{orgID}/waiting_room").HandlerFunc(a.listWait)
 	a.DevRouter.Methods("POST").Path("/{orgID}/waiting_room").HandlerFunc(a.authDevice(a.addWait))
 	a.DevRouter.Methods("GET").Path("/{orgID}/profile").HandlerFunc(a.authDevice(a.getProfile))
+	a.DevRouter.Methods("POST").Path("/oauth").HandlerFunc(a.oauthCall)
+
 
 	// Webapp endpoints
 }
