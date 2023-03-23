@@ -1,0 +1,39 @@
+version : '3.1'
+
+networks:
+  polaris-net:
+
+services:
+  api:
+    image: polaris-service:latest
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DBUSER: root
+      DBPASSWD: Intel123!
+      DBNAME: polaris
+      DBHOST: mysql
+      DBPORT: 3306
+    ports:
+      - "8000:8000"
+    networks:
+      - polaris-net
+
+  mysql:
+    image: mysql:5.7.41
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: Intel123!
+      MYSQL_DATABASE: polaris
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"--password=Intel123!", "ping", "-h", "localhost"]
+      start_period: 10s
+      timeout: 10s
+      retries: 10
+    ports:
+      - "3306:3306"
+    networks:
+      - polaris-net
+    volumes:
+      - "./mysql_init.sql:/docker-entrypoint-initdb.d/mysql_init.sql"
