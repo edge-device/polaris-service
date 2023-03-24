@@ -1,6 +1,10 @@
 package main
 
 import (
+	"crypto/tls"
+	"encoding/json"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -15,6 +19,19 @@ type waitingList struct {
 
 type profile struct {
 	ProfileURL string `json:"profile_url,omitempty"`
+}
+
+type tknObject struct {
+	AccTkn  string `json:"access_token"`
+	TknType string `json:"token_type"`
+	Scope   string `json:"scope"`
+}
+
+type emailObject struct {
+	Email      string `json:"email"`
+	Verified   bool   `json:"verified"`
+	Primary    bool   `json:"primary"`
+	Visibility string `json:"visibility"`
 }
 
 // App.listWait() is used to list an org's devices that are currenty in the waiting room.
@@ -160,9 +177,86 @@ func (a *App) getProfile(w http.ResponseWriter, r *http.Request) {
 	writeJSONResponse(w, http.StatusOK, profURL) // TODO: need to return profile URL object
 }
 
-// oauthCall
-// App.oauthCall() is a callback for Github Oauth requests
+// App.oauthCall() is a callback for Github Oauth requests. On success, user is
+// authorized access to Polaris
 func (a *App) oauthCall(w http.ResponseWriter, r *http.Request) {
+	accessCode := r.URL.Query().Get("code")
+	clientID := "d46f377df25a400e9c03"
+	clientSecret := "9c0d7c235afbd8847b82e8bbe6a8d2fc9aea335d"
+	log.Println("Access code: ", accessCode) // TODO: remove debug message
+
+	// Exchange code from callback for access token
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := http.Client{Transport: tr}
+	reqURL := fmt.Sprintf("https://github.com/login/oauth/access_token?client_id=%s&client_secret=%s&code=%s", clientID, clientSecret, accessCode)
+	req, err := http.NewRequest(http.MethodPost, reqURL, nil)
+	if err != nil {
+		log.Printf("App.oauthCall(): could not create Github access token request: %v\n", err)
+		writeJSONResponse(w, http.StatusUnauthorized, nil)
+		return
+	}
+	req.Header.Set("accept", "application/json")
+	res, err := client.Do(req)
+	if err != nil {
+		log.Printf("App.oauthCall(): could not send Github access token request: %v\n", err)
+		writeJSONResponse(w, http.StatusInternalServerError, nil)
+		return
+	}
+	defer res.Body.Close()
+
+	b, err := io.ReadAll(res.Body)
+	if err != nil {
+		log.Printf("App.oauthCall(): could not retrieve body for token request: %v\n", err)
+		writeJSONResponse(w, http.StatusInternalServerError, nil)
+		return
+	}
+	log.Println("Get access token response: ", string(b)) // TODO: remove debug message
+
+	// TODO: make request to get primary email address
+	// Using access token, request user's email addresses
+	tkn := tknObject{}
+	err = json.Unmarshal(b, &tkn)
+	if err != nil {
+		log.Printf("App.oauthCall(): could not unmarshall token request: %v\n", err)
+		writeJSONResponse(w, http.StatusInternalServerError, nil)
+		return
+	}
+	log.Println("Bearer: ", tkn.AccTkn) // TODO: remove debug message
+	reqURL = "https://api.github.com/user/emails"
+	req, err = http.NewRequest(http.MethodGet, reqURL, nil)
+	if err != nil {
+		log.Printf("App.oauthCall(): could not create Github email request: %v\n", err)
+		writeJSONResponse(w, http.StatusUnauthorized, nil)
+		return
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", tkn.AccTkn))
+	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+	res, err = client.Do(req)
+	if err != nil {
+		log.Printf("App.oauthCall(): could not send Github get email request: %v\n", err)
+		writeJSONResponse(w, http.StatusInternalServerError, nil)
+		return
+	}
+	defer res.Body.Close()
+
+	b, err = io.ReadAll(res.Body)
+	if err != nil {
+		log.Printf("App.oauthCall(): could not retrieve body for email request: %v\n", err)
+		writeJSONResponse(w, http.StatusInternalServerError, nil)
+		return
+	}
+	log.Println("Get email response: ", string(b)) // TODO: remove debug message
+	emailAddrs := []emailObject{}
+	err = json.Unmarshal(b, &emailAddrs)
+	if err != nil {
+		log.Printf("App.oauthCall(): could not unmarshall token request: %v\n", err)
+		writeJSONResponse(w, http.StatusInternalServerError, nil)
+		return
+	}
+	log.Printf("Email object: %v", emailAddrs) // TODO: remove debug message
 
 	writeJSONResponse(w, http.StatusOK, nil)
 }
