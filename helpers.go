@@ -1,19 +1,21 @@
 package main
 
 import (
-	//"crypto/rand"
-	//"encoding/base64"
 	"encoding/json"
-
-	//"log"
+	"log"
 	"net/http"
 )
 
 // writeJSONResponse() is helper that returns JSON HTTP response
-func writeJSONResponse(w http.ResponseWriter, resCode int, payload interface{}) {
-	p, _ := json.Marshal(payload)
+func writeJSONResponse(w http.ResponseWriter, respCode int, payload interface{}) {
+	p, err := json.Marshal(payload)
+	if err != nil {
+		log.Printf("writeJSONResponse(): JSON marshal failed. %v\n", err)
+		writeJSONResponse(w, http.StatusInternalServerError, nil)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(resCode)
+	w.WriteHeader(respCode)
 	w.Write(p)
 }
 

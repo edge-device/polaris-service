@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/golang-jwt/jwt/v4"
@@ -21,6 +22,7 @@ type App struct {
 	DB          *sql.DB
 	DevKey      key
 	PathVarsKey key
+	Conf        config
 }
 
 // App.init() initializes the app's configuration and database'
@@ -37,13 +39,28 @@ func (a *App) init(config *config) {
 	a.DevKey = 1
 	a.PathVarsKey = 2
 
-	// Create database "connection" to use for life of app
+	// Create DB health check loop
 	var err error
-	a.DB, err = sql.Open("mysql", dsn)
-	if err != nil {
-		log.Fatalln("Failed to open DB: ", err)
+	dbFailure := true
+	for i := 1; i < 10; i++ {
+		a.DB, err = sql.Open("mysql", dsn)
+		if err != nil {
+			log.Printf("DB fail to open loop#%d: ", i)
+			duration := time.Second * 5
+			time.Sleep(duration)
+			continue
+		}
+		if err = a.DB.Ping(); err != nil {
+			log.Printf("DB fail to connect loop#%d: ", i)
+			duration := time.Second * 5
+			time.Sleep(duration)
+			continue
+		}
+		dbFailure = false               // If execution gets here, DB is good
+		log.Println("DB must be good!") // TODO: remove this debug message
+		break
 	}
-	if err = a.DB.Ping(); err != nil {
+	if dbFailure {
 		log.Fatalln("Connecting to DB failed: ", err)
 	}
 
@@ -136,8 +153,9 @@ func (a *App) initRoutes() {
 	a.DevRouter.Methods("GET").Path("/{orgID}/waiting_room").HandlerFunc(a.listWait)
 	a.DevRouter.Methods("POST").Path("/{orgID}/waiting_room").HandlerFunc(a.authDevice(a.addWait))
 	a.DevRouter.Methods("GET").Path("/{orgID}/profile").HandlerFunc(a.authDevice(a.getProfile))
-	a.DevRouter.Methods("GET").Path("/oauth").HandlerFunc(a.oauthCall)
-
+	a.DevRouter.Methods("GET").Path("/auth/token").HandlerFunc(a.getTokens)
+	a.DevRouter.Methods("POST").Path("/auth/token/refresh").HandlerFunc(a.refreshTokens)
+	a.DevRouter.Methods("GET").Path("/auth/join").HandlerFunc(a.createAccount)
 
 	// Webapp endpoints
 }

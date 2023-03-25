@@ -15,10 +15,11 @@ const (
 )
 
 type config struct {
-	myInt  int
-	myStr  string
-	myBool bool
-	DB     dbConfig
+	myInt   int
+	myStr   string
+	myBool  bool
+	DB      dbConfig
+	signKey []byte
 }
 
 type dbConfig struct {
@@ -33,6 +34,8 @@ type dbConfig struct {
 // getConfig() is used to get config values from environment variables.
 func getConfig() config {
 	var c config
+	c.signKey = []byte(getSecret("jwt_signing_key"))
+	log.Printf("JWT key: %s\n", c.signKey) // TODO: remove this debug message
 	var err error
 	v, ok := os.LookupEnv("MYINTVAR")
 	if ok {
@@ -76,12 +79,14 @@ func getConfig() config {
 		log.Println("environment variable DBUSER not found")
 	}
 
-	v, ok = os.LookupEnv("DBPASSWD")
-	if ok {
-		c.DB.password = v
-	} else {
-		log.Println("environment variable DBPASSWD not found")
-	}
+	// v, ok = os.LookupEnv("DBPASSWD")
+	// if ok {
+	// 	c.DB.password = v
+	// } else {
+	// 	log.Println("environment variable DBPASSWD not found")
+	// }
+	c.DB.password = getSecret("db_polaris_passwd")
+	log.Printf("DB password: %s\n", c.DB.password) // TODO: remove this debug message
 
 	v, ok = os.LookupEnv("DBHOST")
 	if ok {
@@ -120,4 +125,13 @@ func getConfig() config {
 	}
 
 	return c
+}
+
+// getSecret() returns the string from the named Docker secret file
+func getSecret(secretName string) string {
+	buf, err := os.ReadFile("/run/secrets/" + secretName)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	return strings.TrimSpace(string(buf))
 }

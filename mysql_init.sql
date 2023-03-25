@@ -12,8 +12,6 @@ CREATE TABLE users (
     firstname VARCHAR(255)  DEFAULT '',
     lastname VARCHAR(255) DEFAULT ''
 );
-INSERT INTO users (user_id, created_at, last_login, firstname, lastname) 
-VALUES('dontspamme@gmail.com', 1513615539, 0, 'Mike', 'Miller');
 
 -- devices table will be used for device auth and waiting room
 DROP TABLE IF EXISTS devices;
@@ -38,8 +36,8 @@ VALUES
     ('device5', 'mcdonalds1001', 1665703610, 'my key', 'https://github.com');
 
 -- refresh table
-DROP TABLE IF EXISTS refresh;
-CREATE TABLE refresh (
+DROP TABLE IF EXISTS access_token;
+CREATE TABLE access_token (
     user_id VARCHAR(255) NOT NULL,
     token_id INT AUTO_INCREMENT PRIMARY KEY,
     created_at BIGINT NOT NULL,
