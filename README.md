@@ -16,6 +16,7 @@ http://192.168.1.12:8000/v1/device/my_org/waiting_room
 
 
 mysql -h localhost --protocol tcp -u polaris -p
+DELETE FROM users WHERE user_id="kedge.management@gmail.com";
 
 INSERT INTO users (user_id, created_at, last_login, firstname, lastname) VALUES('kedge.management@gmail.com', 1513615539, 0, 'Mike', 'Miller');
 
